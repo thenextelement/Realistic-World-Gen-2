@@ -22,7 +22,10 @@ public final class RWG2LateMixins implements ILateMixinLoader {
             if (loadedMods.contains("BiomesOPlenty")) mixins.add("MixinBOPSacredOak");
             if (loadedMods.contains("Natura")) mixins.add("MixinNaturaRedwoodTreeGen");
         }
-        if (loadedMods.contains("witchery")) mixins.add("MixinWitcheryComponent");
+        if (loadedMods.contains("witchery")) {
+            mixins.add("MixinWitcheryComponent");
+            mixins.add("MixinWitcheryVillageWallGen");
+        }
         return mixins;
     }
 }
