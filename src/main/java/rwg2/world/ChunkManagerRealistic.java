@@ -1141,21 +1141,37 @@ public class ChunkManagerRealistic extends WorldChunkManager {
         return par1ArrayOfBiomeGenBase;
     }
 
+    /** Largest total height difference allowed across a village start or road footprint. */
+    private static final float VILLAGE_MAX_HEIGHT_RANGE = 24f;
+    /** Largest height step allowed between neighbouring samples, per block of sample spacing. */
+    private static final float VILLAGE_MAX_SLOPE = 0.6f;
+    /** Height step always allowed between neighbouring samples, so short roads tolerate small bumps. */
+    private static final float VILLAGE_SLOPE_ALLOWANCE = 2f;
+
+    /**
+     * Villages use this to test their start and every road. RWG treats it as a land and terrain-shape check rather than
+     * a biome check: every sample must be above sea level, the terrain may climb gently overall, but no steep step (a
+     * cliff or ravine edge) may sit between neighbouring samples.
+     */
     public boolean areBiomesViable(int x, int y, int par3, List par4List) {
         int radius = Math.min(32, Math.max(0, par3));
+        int spacing = radius / 2;
+        float maxStep = VILLAGE_SLOPE_ALLOWANCE + spacing * VILLAGE_MAX_SLOPE;
+        float[][] heights = new float[5][5];
         float lowestNoise = Float.POSITIVE_INFINITY;
         float highestNoise = Float.NEGATIVE_INFINITY;
-        for (int i = -2; i <= 2; i++) {
-            for (int j = -2; j <= 2; j++) {
-                int sampleX = x + i * radius / 2;
-                int sampleZ = y + j * radius / 2;
-                float noise = getNoiseAt(sampleX, sampleZ);
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 5; j++) {
+                float noise = getNoiseAt(x + (i - 2) * spacing, y + (j - 2) * spacing);
                 if (noise < 63f) return false;
+                if (i > 0 && Math.abs(noise - heights[i - 1][j]) > maxStep) return false;
+                if (j > 0 && Math.abs(noise - heights[i][j - 1]) > maxStep) return false;
+                heights[i][j] = noise;
                 if (noise < lowestNoise) lowestNoise = noise;
                 if (noise > highestNoise) highestNoise = noise;
             }
         }
-        return highestNoise - lowestNoise < 8f;
+        return highestNoise - lowestNoise < VILLAGE_MAX_HEIGHT_RANGE;
     }
 
     public ChunkPosition findBiomePosition(int p_150795_1_, int p_150795_2_, int p_150795_3_, List p_150795_4_,
